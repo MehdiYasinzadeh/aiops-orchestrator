@@ -2,7 +2,7 @@
 
 ## نام محصول: پلتفرم هوشمند تحلیل و ریشه‌یابی رخدادها در سیستم‌های توزیع‌شده (Enterprise AIOps Platform)
 * **نسخه سند:** 1.0.0
-* **وضعیت:** پیش‌نویس جهت بررسی (Draft for Review)
+* **وضعیت:** تصویب‌شده (Approved)
 * **سند مرجع:** [PRD.md](file:///Users/mehdi/IdeaProjects/aiops-orchestrator/docs/PRD.md)
 * **معمار سیستم:** مهدی یاسین‌زاده
 
@@ -54,7 +54,7 @@
                                                                                |
                               +------------------------------------------------+--------------------+
                               |                                                |                    |
-                              v (REST POST /v1/classify)                       v (REST /api/chat)   v (SQL Query)
+                              v (REST POST /v1/classify)                       v (REST /api/chat)   v (SQL / Read)
              +----------------------------------+            +-------------------+    +--------------------+
              |       aiops-laya-detector        |            |  Local LLM Runtime|    | aiops-observability|
              |       (FastAPI / Python)         |            |  (Local Dedicated)|    | (Grafana Dashboard)|
@@ -83,7 +83,7 @@
    * ارسال رخداد همراه با زمینه اولیه به مدل استدلال لایه دوم.
    * پردازش تصمیمات مدل: در صورت دریافت سیگنال `NEED_MORE_LOGS`، استخراج دینامیک سطرهای درخواستی از بافر و ارسال مجدد به مدل در نوبت دوم.
 5. **لایه ماندگاری و پایش (Persistence & Metrics):**
-   * ذخیره رخدادهای نهایی در پایگاه داده PostgreSQL با استفاده از Spring Data JPA.
+   * ثبت رخدادهای نهایی در پایگاه داده جهت استناد و مصورسازی با استفاده از Spring Data JPA.
    * انتشار شاخص‌های کارایی (تعداد حوادث، زمان پاسخ، نرخ فیلترینگ) از طریق Spring Boot Actuator.
 
 ### ۲.۲. میکروسرویس غربال‌گری سریع (`aiops-laya-detector`)
@@ -94,13 +94,13 @@
 
 ### ۲.۳. بسته استقرار و مانیتورینگ (`aiops-observability`)
 این مخزن شامل نیازمندی‌های استقرار، دیتابیس و نمایش ریل‌تایم است:
-* پیکربندی Docker Compose جهت راه‌اندازی پایگاه داده PostgreSQL و داشبورد Grafana.
+* پیکربندی Docker Compose جهت راه‌اندازی پایگاه داده سازمانی و داشبورد مدیریتی Grafana.
 * قالب‌های پیش‌ساخته JSON برای داشبورد گرافانا با تمرکز بر نمایش: زمان رخداد، نام سرویس، امضای خطا، تعداد تکرار، علت ریشه‌ای و گام‌های عملیاتی رفع باگ.
 
 ### ۲.۴. موتور استنتاج محلی لایه دوم (Local LLM Runtime)
 * اجرای مدل زبانی متخصص تحلیل کد به صورت محلی و کاملاً ایزوله از اینترنت.
 * پشتیبانی از پروتکل استاندارد REST API (`/api/chat`).
-* استقلال از معماری سخت‌افزاری (Hardware-Agnostic) و قابلیت اجرا روی سرورهای محلی سازمان.
+* استقلال از معماری سخت‌افزار (Hardware-Agnostic) و قابلیت اجرا روی سرورهای محلی سازمان.
 
 ---
 
@@ -148,30 +148,20 @@
 
 ---
 
-## ۴. مدل داده و ساختار پایگاه داده (Data Model & Schema)
+## ۴. مدل داده و سازوکار ذخیره‌سازی (Data Persistence & Incident Records)
 
-جدول پایگاه داده `incidents` در PostgreSQL به عنوان مخزن مرکزی ثبت حوادث تعریف می‌شود:
+سوابق تحلیل حوادث تولیدشده توسط هوش مصنوعی به عنوان داده‌های رسمی عملیاتی جهت استناد، پیگیری و نمایش در داشبورد مدیریتی ذخیره می‌شوند:
 
-```sql
-CREATE TABLE incidents (
-    id BIGSERIAL PRIMARY KEY,
-    incident_signature VARCHAR(255) NOT NULL,
-    service_name VARCHAR(100) NOT NULL,
-    severity VARCHAR(20) NOT NULL,          -- CRITICAL, HIGH, MEDIUM, LOW
-    status VARCHAR(20) NOT NULL,            -- OPEN, INVESTIGATING, RESOLVED
-    first_seen_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    last_seen_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    occurrence_count INTEGER DEFAULT 1,
-    root_cause_summary TEXT NOT NULL,
-    actionable_remediation JSONB NOT NULL,   -- Array of concrete action steps
-    diagnostic_turns INTEGER DEFAULT 1,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_signature_service UNIQUE (incident_signature, service_name)
-);
-
-CREATE INDEX idx_incidents_last_seen ON incidents (last_seen_at DESC);
-CREATE INDEX idx_incidents_severity ON incidents (severity);
-```
+* **مخزن داده‌ای پایدار:** استفاده از پایگاه داده رابطه‌ای (مانند PostgreSQL) جهت نگهداری ساختاریافته حوادث و تحلیل‌ها.
+* **موجودیت داده‌ای حادثه (Incident Entity):** هر رخداد تشخیصی شامل فیلدهای مشخص زیر خواهد بود:
+  - **شناسه و امضای یکتای رخداد (`incident_signature`):** ترکیبی از ریشه استثناء و مکان خطا در کد جهت جلوگیری از ایجاد رکوردهای تکراری.
+  - **مشخصات مبدا (`service_name`):** نام سرویس یا کامپوننت گزارش‌کننده خطا.
+  - **وضعیت و شدت رخداد (`severity`, `status`):** سطح اهمیت بحران (بحرانی، بالا، متوسط) و وضعیت رسیدگی.
+  - **ردیابی زمانی و فراوانی (`first_seen_at`, `last_seen_at`, `occurrence_count`):** ثبت زمان شروع رخداد، زمان آخرین تکرار و شمارش تعداد تکرارها در دوره جاری.
+  - **تحلیل علت ریشه‌ای (`root_cause_summary`):** خلاصه دلیل ریشه‌ای خطا به صورت شفاف و مستقیم.
+  - **گام‌های عملیاتی رفع باگ (`actionable_remediation`):** مجموعه‌ای از گام‌های پیشنهادی برای حل قطعی مشکل.
+  - **سنجه‌های تشخیصی (`diagnostic_turns`):** تعداد مراحل استنتاج مدل برای ارزیابی عملکرد سیستم.
+* لایه ماندگاری به صورت کاملاً ماژولار و مبتنی بر Spring Data JPA طراحی می‌شود تا نگهداری و توسعه آن مستقل از دیتابیس زیرین باشد.
 
 ---
 
