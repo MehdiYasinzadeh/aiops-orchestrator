@@ -34,7 +34,7 @@
 |                                                      [Suspicious Windows]    |                     |
 |                                                                              v                     |
 |                                                       +-----------------------------------------+  |
-|                                                       | 4. System-1 Client (REST)               |  |
+|                                                       | 4. System-1 Client (gRPC / Protobuf)    |  |
 |                                                       |    Evaluate: NORMAL vs ERROR            |  |
 |                                                       +----------------------+------------------+  |
 |                                                                              |                     |
@@ -54,10 +54,10 @@
                                                                                |
                               +------------------------------------------------+--------------------+
                               |                                                |                    |
-                              v (REST POST /v1/classify)                       v (REST /api/chat)   v (SQL / Read)
+                              v (gRPC / HTTP/2 Protobuf)                       v (REST /api/chat)   v (SQL / Read)
              +----------------------------------+            +-------------------+    +--------------------+
              |       aiops-laya-detector        |            |  Local LLM Runtime|    | aiops-observability|
-             |       (FastAPI / Python)         |            |  (Local Dedicated)|    | (Grafana Dashboard)|
+             |       (gRPC Server / Python)     |            |  (Local Dedicated)|    | (Grafana Dashboard)|
              | - Non-autoregressive forward pass|            | - Deep RCA Engine |    | - Incident Table   |
              | - Sub-millisecond evaluation     |            | - Multi-Turn Loop |    | - Real-time Alert  |
              +----------------------------------+            +-------------------+    +--------------------+
@@ -87,9 +87,9 @@
    * انتشار شاخص‌های کارایی (تعداد حوادث، زمان پاسخ، نرخ فیلترینگ) از طریق Spring Boot Actuator.
 
 ### ۲.۲. میکروسرویس غربال‌گری سریع (`aiops-laya-detector`)
-این ماژول سبک و تخصصی به زبان **Python 3.11 و FastAPI** پیاده‌سازی می‌شود:
+این ماژول سبک و تخصصی به زبان **Python 3.11 و سرور gRPC** پیاده‌سازی می‌شود:
 * اجرای مدل غیرخودبازگشتی (Non-autoregressive) جهت ارزیابی پنجره‌های لاگ در یک Forward Pass ساده بدون تولید متن.
-* ارائه وب‌سرویس REST با اندپوینت `POST /v1/classify` با زمان پاسخ‌دهی زیر ۵ میلی‌ثانیه.
+* ارائه سرویس فوق‌سریع gRPC بر بستر HTTP/2 با استفاده از Protocol Buffers (با پشتیبانی از فراخوانی تک‌مرحله‌ای Unary و جریانی Streaming) با زمان پاسخ‌دهی زیر ۱ میلی‌ثانیه.
 * تفکیک قطعی رخدادهای عادی (`Normal`) از موارد مشکوک (`Error`).
 
 ### ۲.۳. بسته استقرار و مانیتورینگ (`aiops-observability`)

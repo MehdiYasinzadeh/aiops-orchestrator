@@ -34,7 +34,7 @@ The platform is designed around a **Two-Tier Cognitive Architecture (System 1 & 
 |                                                      [Suspicious Windows]    |                     |
 |                                                                              v                     |
 |                                                       +-----------------------------------------+  |
-|                                                       | 4. System-1 Client (REST)               |  |
+|                                                       | 4. System-1 Client (gRPC / Protobuf)    |  |
 |                                                       |    Evaluate: NORMAL vs ERROR            |  |
 |                                                       +----------------------+------------------+  |
 |                                                                              |                     |
@@ -54,10 +54,10 @@ The platform is designed around a **Two-Tier Cognitive Architecture (System 1 & 
                                                                                |
                               +------------------------------------------------+--------------------+
                               |                                                |                    |
-                              v (REST POST /v1/classify)                       v (REST /api/chat)   v (SQL / Read)
+                              v (gRPC / HTTP/2 Protobuf)                       v (REST /api/chat)   v (SQL / Read)
              +----------------------------------+            +-------------------+    +--------------------+
              |       aiops-laya-detector        |            |  Local LLM Runtime|    | aiops-observability|
-             |       (FastAPI / Python)         |            |  (Local Dedicated)|    | (Grafana Dashboard)|
+             |       (gRPC Server / Python)     |            |  (Local Dedicated)|    | (Grafana Dashboard)|
              | - Non-autoregressive forward pass|            | - Deep RCA Engine |    | - Incident Table   |
              | - Sub-millisecond evaluation     |            | - Multi-Turn Loop |    | - Real-time Alert  |
              +----------------------------------+            +-------------------+    +--------------------+
@@ -87,9 +87,9 @@ The primary system backbone, built on **Java 21 and Spring Boot 3.x**:
    * Exposes operational telemetry (incident volume, evaluation latency, filtering ratio) via Spring Boot Actuator and Micrometer.
 
 ### 2.2. Fast Classification Microservice (`aiops-laya-detector`)
-A lightweight inference service implemented in **Python 3.11 and FastAPI**:
+A lightweight inference service implemented in **Python 3.11 and gRPC**:
 * Executes non-autoregressive model inference over sliding log windows in a single forward pass without token generation overhead.
-* Exposes a high-performance REST endpoint (`POST /v1/classify`) operating with sub-5ms latency.
+* Exposes a high-performance gRPC service over HTTP/2 using Protocol Buffers (supporting Unary and Streaming calls) operating with sub-millisecond latency.
 * Categorizes log slices decisively into `Normal` or `Error`.
 
 ### 2.3. Deployment & Observability Package (`aiops-observability`)
