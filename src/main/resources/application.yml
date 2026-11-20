@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aiops-orchestrator
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/aiops_db}
+    username: ${SPRING_DATASOURCE_USERNAME:aiops_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:aiops_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
+
+  cache:
+    type: caffeine
+    cache-names:
+      - incidentDebounce
+      - errorSignatures
+    caffeine:
+      spec: maximumSize=50000,expireAfterWrite=60s
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: aiops-orchestrator-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+aiops:
+  detector:
+    host: ${AIOPS_DETECTOR_HOST:localhost}
+    port: ${AIOPS_DETECTOR_PORT:50051}
+  loki:
+    url: ${AIOPS_LOKI_URL:http://localhost:3100}
+  llm:
+    endpoint: ${AIOPS_LLM_ENDPOINT:http://localhost:11434/api/chat}
+    model: ${AIOPS_LLM_MODEL:deepseek-r1:14b}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized

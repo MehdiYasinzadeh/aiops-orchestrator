@@ -48,7 +48,7 @@ syntax = "proto3";
 package aiops.detector.v1;
 
 option java_multiple_files = true;
-option java_package = "com.aiops.orchestrator.grpc.detector";
+option java_package = "ir.mehdiyasinzadeh.aiops.grpc.detector";
 option java_outer_classname = "DetectorProto";
 
 // Tier-1 Ultra-Fast Anomaly Detection Service
@@ -99,7 +99,7 @@ syntax = "proto3";
 package aiops.ingestion.v1;
 
 option java_multiple_files = true;
-option java_package = "com.aiops.orchestrator.grpc.ingestion";
+option java_package = "ir.mehdiyasinzadeh.aiops.grpc.ingestion";
 option java_outer_classname = "IngestionProto";
 
 // Log Streaming Ingestion Service

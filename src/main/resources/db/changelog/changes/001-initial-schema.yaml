@@ -1,0 +1,93 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-incidents-table
+      author: mehdi_yasinzadeh
+      changes:
+        - createTable:
+            tableName: incidents
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: incident_signature
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: service_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: severity
+                  type: VARCHAR(20)
+                  defaultValue: "CRITICAL"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: "OPEN"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: first_seen_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_seen_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurrence_count
+                  type: BIGINT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: root_cause_summary
+                  type: TEXT
+              - column:
+                  name: actionable_remediation
+                  type: TEXT
+              - column:
+                  name: diagnostic_turns
+                  type: INT
+                  defaultValueNumeric: 1
+                  constraints:
+                    nullable: false
+              - column:
+                  name: raw_stack_trace
+                  type: TEXT
+        - createIndex:
+            indexName: idx_incidents_signature
+            tableName: incidents
+            columns:
+              - column:
+                  name: incident_signature
+        - createIndex:
+            indexName: idx_incidents_service
+            tableName: incidents
+            columns:
+              - column:
+                  name: service_name
+        - createIndex:
+            indexName: idx_incidents_status
+            tableName: incidents
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_incidents_last_seen
+            tableName: incidents
+            columns:
+              - column:
+                  name: last_seen_at

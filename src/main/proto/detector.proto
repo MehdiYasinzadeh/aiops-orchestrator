@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package aiops.detector.v1;
+
+option java_multiple_files = true;
+option java_package = "ir.mehdiyasinzadeh.aiops.grpc.detector";
+option java_outer_classname = "DetectorProto";
+
+// Fast first-layer anomaly detection service (Laya Detector)
+service AnomalyDetectorService {
+  // Evaluates a single window of log lines (Unary)
+  rpc ClassifyWindow (ClassifyWindowRequest) returns (ClassifyWindowResponse);
+
+  // Evaluates a continuous stream of log windows (Bidirectional/Streaming)
+  rpc StreamClassifyWindows (stream ClassifyWindowRequest) returns (stream ClassifyWindowResponse);
+}
+
+// Request to classify a window of logs
+message ClassifyWindowRequest {
+  string window_id = 1;
+  string service_name = 2;
+  repeated string log_lines = 3;
+  int64 start_line = 4;
+  int64 end_line = 5;
+  int64 timestamp_epoch_ms = 6;
+}
+
+// Classification status
+enum ClassificationLabel {
+  LABEL_UNSPECIFIED = 0;
+  NORMAL = 1;
+  ERROR = 2;
+}
+
+// Response from the fast classifier
+message ClassifyWindowResponse {
+  string window_id = 1;
+  ClassificationLabel label = 2;
+  float confidence = 3;
+  string rule_triggered = 4;
+  int64 evaluation_duration_micros = 5;
+}

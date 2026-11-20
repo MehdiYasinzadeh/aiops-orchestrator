@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package aiops.ingestion.v1;
+
+option java_multiple_files = true;
+option java_package = "ir.mehdiyasinzadeh.aiops.grpc.ingestion";
+option java_outer_classname = "IngestionProto";
+
+// Fast zero-loss log ingestion streaming service
+service LogIngestionService {
+  // Streams batches of log lines from client Spring Boot applications
+  rpc StreamLogs (stream LogBatchRequest) returns (LogIngestionAck);
+}
+
+message LogEntry {
+  int64 timestamp_epoch_ms = 1;
+  string log_level = 2;         // INFO, ERROR, WARN, DEBUG
+  string thread_name = 3;
+  string logger_name = 4;
+  string message = 5;
+  repeated string stack_trace = 6;
+}
+
+message LogBatchRequest {
+  string source_service = 1;
+  string environment = 2;
+  int64 batch_sequence = 3;
+  repeated LogEntry entries = 4;
+}
+
+message LogIngestionAck {
+  bool acknowledged = 1;
+  int64 last_processed_sequence = 2;
+  int64 server_time_ms = 3;
+}
